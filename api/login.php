@@ -1,5 +1,7 @@
 <?php
 
+require("./dbConfig.php");
+
 if ($_SERVER["REQUEST_METHOD"] == 'POST') {
     if (!isset($_POST["username"])) {
         echo "Username is required!";
@@ -11,8 +13,8 @@ if ($_SERVER["REQUEST_METHOD"] == 'POST') {
     }
 
     $username = $_POST["username"];
-    $password = $_POST["password"];
-    $response = ["status" => true, "message" => ""];
+    $password = md5($_POST["password"]);
+    $response = ["status" => true, "message" => "", "data" => null];
 
     if ($username == '' || $password == '') {
         $response["status"] = false;
@@ -21,7 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] == 'POST') {
         exit;
     }
 
-    $pdo = new PDO("pgsql:host=localhost;port=5432;dbname=login_register;user=postgres;password=postgres");
+    $pdo = getPDO();
     if (!$pdo) {
         $response["status"] = false;
         $response["message"] = "Database Not Connected!";
@@ -36,6 +38,7 @@ if ($_SERVER["REQUEST_METHOD"] == 'POST') {
     $user = $statment->fetchAll(PDO::FETCH_ASSOC);
     if (count($user) == 1) {
         $response["message"] = "LoggedIn Successfully!";
+        $response["data"] = $user[0]["id"];
         echo json_encode($response);
         exit;
     } else {
@@ -43,7 +46,6 @@ if ($_SERVER["REQUEST_METHOD"] == 'POST') {
         $response["message"] = "Username & Password shouldn't be empty";
         echo json_encode($response);
         exit;
-        
     }
 }
 echo "Only POST request is accepted!";

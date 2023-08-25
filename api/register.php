@@ -1,26 +1,42 @@
 <?php
 
 if ($_SERVER["REQUEST_METHOD"] == 'POST') {
+    $response = ["status" => false, "message" => ""];
+
     if (!isset($_POST["username"])) {
-        echo "Username is required!";
+        $response["message"] = "Username is required!";
+        echo json_encode($response);
         exit;
     }
     if (!isset($_POST["password"])) {
-        echo "Password is required!";
+        $response["message"] = "Password is required!";
+        echo json_encode($response);
         exit;
     }
 
     $username = $_POST["username"];
-    $password = $_POST["password"];
+    $password = md5($_POST["password"]);
 
     if ($username == '' || $password == '') {
-        echo "Username & Password shouldn't be empty";
+        $response["message"] = "Username & Password shouldn't be empty";
+        echo json_encode($response);
         exit;
     }
 
     $pdo = new PDO("pgsql:host=localhost;port=5432;dbname=login_register;user=postgres;password=postgres");
     if (!$pdo) {
-        echo "Database Not Connected!";
+        $response["message"] = "Database Not Connected!";
+        echo json_encode($response);
+        exit;
+    }
+
+    $query = "SELECT id FROM users WHERE username = ?";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute([$username]);
+    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (count($result) == 1) {
+        $response["message"] = "Username already Taken!";
+        echo json_encode($response);
         exit;
     }
 
@@ -29,7 +45,16 @@ if ($_SERVER["REQUEST_METHOD"] == 'POST') {
     $statment = $pdo->prepare($query);
     $result = $statment->execute([$username, $password]);
 
-    echo $result;
-    return;
+    if (!$result) {
+        $response["message"] = $statment->errorInfo();
+        echo json_encode($response);
+    }
+
+    $response["status"] = true;
+    $response["message"] = "Successfully Registered!";
+    echo json_encode($response);
+    exit;
 }
-echo "Only POST request is accepted!";
+
+$response["message"] = "ONLY POST method Accepted";
+echo json_encode($response);
